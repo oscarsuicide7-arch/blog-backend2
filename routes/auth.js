@@ -36,4 +36,22 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Alias en ingles para que Flutter no se quede cargando
+router.post('/register', async (req, res) => {
+  req.body.correo = req.body.correo || req.body.email;
+  req.body.contrasena = req.body.contrasena || req.body.password;
+  // re-envia a la logica de /registro
+  const { correo, contrasena } = req.body;
+  try {
+    const existe = await Usuario.findOne({ correo });
+    if (existe) return res.status(400).json({ error: 'El correo ya está registrado' });
+    const usuario = new Usuario({ correo, contrasena });
+    await usuario.save();
+    const token = jwt.sign({ id: usuario._id }, process.env.JWT_SECRET, { expiresIn: '2h' });
+    res.status(201).json({ token, usuario: { id: usuario._id, correo } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
